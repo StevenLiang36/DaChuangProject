@@ -101,6 +101,8 @@ form {
 
 #textLogin {
     margin-bottom: 0;
+    text-align: center;
+    font-size: x-large;
 }
 
 #textSignup {
@@ -147,11 +149,6 @@ form {
     color: #333;
     background-color: #fff;
 }
-
-#textLogin {
-    text-align: center;
-    font-size: x-large;
-}  
 
 /* 帮助栏 */
 .helpBox {

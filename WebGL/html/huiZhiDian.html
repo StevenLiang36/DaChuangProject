@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script src="../glMatrix-0.9.6.min.js"></script>
+    <script>
+        var projMat4 = mat4.create(); // 定义一个4*4矩阵，用于存储投影矩阵
+        var webgl; // 定义一个全局变量
+
+        // 定义了一个包含顶点着色器代码的字符串，用于定义绘制的点的位置和大小。
+        let vertexstring = `
+        attribute vec4 a_position;
+        uniform mat4 proj;
+        void main(void){
+            gl_Position =proj * a_position;
+            gl_PointSize=60.0;
+        }
+        `;
+
+        // 定义了一个包含片段着色器代码的字符串，用于定义绘制的点的颜色。
+        let fragmentstring = `
+        void main(void){
+          gl_FragColor = vec4(0,0,1.0,1.0);
+        }
+        `;
+
+        // 初始化WebGL上下文，着色器和缓冲区，并调用draw()方法进行绘制。
+        function init() {
+            initWebgl();
+            initShader();
+            initBuffer();
+            draw();
+        }
+
+        // 获取HTML canvas元素并获取WebGL上下文，设置WebGL视口和投影矩阵。
+        function initWebgl() {
+            let webglDiv = document.getElementById('myCanvas');
+            webgl = webglDiv.getContext("webgl");
+            webgl.viewport(0, 0, webglDiv.clientWidth, webglDiv.clientHeight);
+            mat4.ortho(0, webglDiv.clientWidth, webglDiv.clientHeight, 0, -1.0, 1.0, projMat4)
+        }
+
+        // 创建着色器对象并编译链接顶点和片段着色器，将程序对象附加到WebGL上下文。
+        function initShader() {
+
+            let vsshader = webgl.createShader(webgl.VERTEX_SHADER);
+            let fsshader = webgl.createShader(webgl.FRAGMENT_SHADER);
+
+            webgl.shaderSource(vsshader, vertexstring);
+            webgl.shaderSource(fsshader, fragmentstring);
+
+            webgl.compileShader(vsshader);
+            webgl.compileShader(fsshader);
+
+            if (!webgl.getShaderParameter(vsshader, webgl.COMPILE_STATUS)) {
+                var err = webgl.getShaderInfoLog(vsshader);
+                alert(err);
+                return;
+            }
+            if (!webgl.getShaderParameter(fsshader, webgl.COMPILE_STATUS)) {
+                var err = webgl.getShaderInfoLog(fsshader);
+                alert(err);
+                return;
+            }
+
+            let program = webgl.createProgram();
+            webgl.attachShader(program, vsshader);
+            webgl.attachShader(program, fsshader)
+
+            webgl.linkProgram(program);
+            webgl.useProgram(program);
+
+            webgl.program = program
+        }
+
+        // 创建一个包含点的位置信息的缓冲区对象，将缓冲区对象绑定到a_position属性并将投影矩阵传递给片段着色器。
+        function initBuffer() {
+            let pointPosition = new Float32Array([100.0, 100.0, 0.0, 1.0]);
+            let aPsotion = webgl.getAttribLocation(webgl.program, "a_position");
+            webgl.vertexAttrib4fv(aPsotion, pointPosition);
+            let uniformProj = webgl.getUniformLocation(webgl.program, "proj");
+            webgl.uniformMatrix4fv(uniformProj, false, projMat4);
+        }
+
+        // 清除颜色缓冲区，设置绘制参数并调用gl.drawArrays()方法绘制点。
+        function draw() {
+            webgl.clearColor(0.0, 0.0, 0.0, 1.0);
+            webgl.clear(webgl.COLOR_BUFFER_BIT | webgl.DEPTH_BUFFER_BIT);
+            webgl.drawArrays(webgl.POINTS, 0, 1);
+        }
+    </script>
+</head>
+
+<body onload="init()">
+    <canvas id='myCanvas' width="1024" height='768'></canvas>
+</body>
+
+</html>

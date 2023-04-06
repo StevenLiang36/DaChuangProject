@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script src="../glMatrix-0.9.6.min.js"></script>
+    <script>
+        var projMat4 = mat4.create();
+        var webgl;
+
+        let vertexstring = `
+        attribute vec3 a_position;
+        uniform mat4 proj;
+        void main(void){
+            gl_Position = proj*vec4(a_position,1.0)  ;
+            gl_PointSize=60.0;
+        }
+        `;
+
+        let fragmentstring = `
+        precision mediump float;
+        void main(void){
+          gl_FragColor = vec4(0.0,0.0,1.0,1.0);
+        }
+        `;
+
+        function init() {
+            initWebgl();
+            initShader();
+            initBuffer();
+            draw();
+        }
+
+        function initWebgl() {
+            let webglDiv = document.getElementById('myCanvas');
+            webgl = webglDiv.getContext("webgl");
+            webgl.viewport(0, 0, webglDiv.clientWidth, webglDiv.clientHeight);
+            mat4.ortho(0, webglDiv.clientWidth, webglDiv.clientHeight, 0, -1.0, 1.0, projMat4)
+        }
+
+        // 着色器程序初始化
+        // 创建着色器对象并编译链接顶点和片段着色器，将程序对象附加到WebGL上下文。
+        function initShader() {
+            // 创建顶点着色器对象和片元着色器对象
+            let vsshader = webgl.createShader(webgl.VERTEX_SHADER);
+            let fsshader = webgl.createShader(webgl.FRAGMENT_SHADER);
+
+            // 绑定顶点着色器代码和片元着色器代码
+            webgl.shaderSource(vsshader, vertexstring);
+            webgl.shaderSource(fsshader, fragmentstring);
+            
+            // 编译顶点着色器代码和片元着色器代码
+            webgl.compileShader(vsshader);
+            webgl.compileShader(fsshader);
+
+            // 判断着色器是否编译成功
+            if (!webgl.getShaderParameter(vsshader, webgl.COMPILE_STATUS)) {
+                var err = webgl.getShaderInfoLog(vsshader);
+                alert(err);
+                return;
+            }
+            if (!webgl.getShaderParameter(fsshader, webgl.COMPILE_STATUS)) {
+                var err = webgl.getShaderInfoLog(fsshader);
+                alert(err);
+                return;
+            }
+
+            // 创建着色器程序对象
+            let program = webgl.createProgram();
+            // 把顶点着色器对象和片元着色器对象附着到着色器程序对象上
+            webgl.attachShader(program, vsshader);
+            webgl.attachShader(program, fsshader)
+
+            // 链接着色器程序
+            webgl.linkProgram(program);
+            // 使用着色器程序
+            webgl.useProgram(program);
+            // 把着色器程序保存到 WebGL 上下文对象中
+            webgl.program = program
+        }
+
+        var points = [];
+        var colors=[];
+
+        function initBuffer() {
+            // 获取顶点位置属性的存储位置
+            let aPsotion = webgl.getAttribLocation(webgl.program, "a_position");
+            // 描绘了四个点坐标，上面两个点连成线，下面两个点连成线
+            let arr = [100.0,100.0,0, 
+                       200.0,200.0,0, 
+                       
+                       300.0,200.0,0,
+                       400.0,600,0,0]; 
+            // 将数组转化为 Float32Array 类型
+            let vertexArr = new Float32Array(arr);
+            // 创建一个缓冲区对象
+            let trangleBuffer =  webgl.createBuffer();
+            // 绑定缓冲区对象到 target（这里是 ARRAY_BUFFER）
+            webgl.bindBuffer(webgl.ARRAY_BUFFER,trangleBuffer);
+            // 将顶点数据写入缓冲区对象
+            webgl.bufferData(webgl.ARRAY_BUFFER,vertexArr,webgl.STATIC_DRAW);
+            // 开启顶点位置数据数组
+            webgl.enableVertexAttribArray(aPsotion);
+            // 指定顶点位置数据数组的参数
+            webgl.vertexAttribPointer(aPsotion,3, webgl.FLOAT, false, 0, 0);
+
+            let uniformProj = webgl.getUniformLocation(webgl.program, "proj");
+            webgl.uniformMatrix4fv(uniformProj, false, projMat4);
+        }
+
+        function draw() {
+            // 清空画布
+            webgl.clearColor(0.0, 0.0, 0.0, 1.0);
+            webgl.clear(webgl.COLOR_BUFFER_BIT | webgl.DEPTH_BUFFER_BIT);
+            // 绘制图形
+            webgl.drawArrays(webgl.LINES,0,4);
+            //webgl.drawArrays(webgl.LINE_STRIP,0,4)
+            //webgl.drawArrays(webgl.LINE_LOOP,0,4)
+            
+        }
+    </script>
+</head>
+
+<body onload="init()">
+    <canvas id='myCanvas' width="1024" height='700'></canvas>
+</body>
+
+</html>

@@ -1,0 +1,131 @@
+<!-- 尝试对无颜色obj点云文件进行着色1 -->
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>carOnRoad3</title>
+
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+    }
+  </style>
+
+  <!-- <script async src="https://unpkg.com/es-module-shims@1.6.3/dist/es-module-shims.js"></script>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://unpkg.com/three@<version>/build/three.module.js",
+      "three/addons/": "https://unpkg.com/three@<version>/examples/jsm/"
+    }
+  }
+  </script>
+
+  <script type="module">
+    import * as THREE from 'three';
+  </script> -->
+
+</head>
+
+<body>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three/examples/js/loaders/OBJLoader.js"></script>
+
+  <script>
+    // 创建场景和相机
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(
+      75,
+      window.innerWidth / window.innerHeight,
+      0.1,
+      1000
+    );
+
+    // 创建渲染器
+    const renderer = new THREE.WebGLRenderer();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
+
+    // 加载OBJ文件
+    const loader = new THREE.OBJLoader();
+    loader.load(
+      // OBJ文件路径
+      'carOnRoad.obj',
+      // 'carOnRoad2.obj',
+
+      // 加载完成的回调函数
+      function (object) {
+        // 将OBJ文件添加到场景中
+        scene.add(object);
+
+        // 获取 OBJLoader 默认使用的材质
+        const defaultMaterial = object.children[0].material;
+
+        // 创建新的着色器材质
+        const customMaterial = new THREE.ShaderMaterial({
+          uniforms: {
+            pointColor: { value: new THREE.Color(0xff0000) },
+            pointSize: { value: 1 },
+          },
+          vertexShader: `
+              uniform float pointSize;
+              varying vec3 vColor;
+
+              void main() {
+                vColor = color;
+                vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+                gl_PointSize = pointSize * (1.0 / -mvPosition.z);
+                gl_Position = projectionMatrix * mvPosition;
+              }
+            `,
+          fragmentShader: `
+              uniform vec3 pointColor;
+              varying vec3 vColor;
+
+              void main() {
+                gl_FragColor = vec4(pointColor * vColor, 1.0);
+              }
+            `,
+        });
+
+        // 将新的着色器材质应用到 OBJ 文件中的所有 Mesh 对象
+        object.traverse(function (child) {
+          if (child instanceof THREE.Mesh) {
+            child.material = customMaterial;
+          }
+        });
+      },
+
+      // 加载进度的回调函数
+      function (xhr) {
+        console.log((xhr.loaded / xhr.total) * 100 + '% loaded');
+      },
+
+      // 加载错误的回调函数
+      function (error) {
+        console.log('An error happened');
+      }
+    );
+
+    // 创建灯光
+    const light = new THREE.PointLight(0xffffff, 1, 100);
+    light.position.set(0, 0, 5);
+    scene.add(light);
+
+    // 将相机位置设置为(0, 0, 5)，并渲染场景
+    camera.position.z = 5;
+    function animate() {
+      requestAnimationFrame(animate);
+      renderer.render(scene, camera);
+    }
+    animate();
+
+  </script>
+</body>
+
+</html>

@@ -28,7 +28,7 @@ def userAdd(request):
 def userDel(request):
     nid = request.GET.get('nid')
     UserInfo.objects.filter(id = nid).delete()
-    return redirect("/UserInfo/")
+    return redirect("/userInfo/")
 
 def teamInfoList(request):
     data_list = MyTeam.objects.all()
